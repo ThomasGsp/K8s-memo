@@ -1,5 +1,5 @@
 
-# Kubernetes memo to prepare CKA - v 1.11.0 (Or just use k8s!)
+# Kubernetes memo to prepare CKA - v 1.11.0 (Or just using k8s!)
 
 # Index list
 
@@ -440,4 +440,131 @@ kubectl delete cronjob hello
 
 ## Create a service
 https://kubernetes.io/docs/concepts/services-networking/service/
+https://kubernetes.io/docs/tasks/access-application-cluster/service-access-application-cluster/
 
+
+#### Basic example
+Run a Hello World application in your cluster:
+``` bash
+kubectl run hello-world --replicas=2 --labels="run=load-balancer-example" --image=gcr.io/google-samples/node-hello:1.0  --port=8080
+```
+
+Display information about the Deployment:
+``` bash
+kubectl get deployments hello-world
+kubectl describe deployments hello-world
+```
+
+Display information about your ReplicaSet objects:
+``` bash
+kubectl get replicasets
+kubectl describe replicasets
+```
+
+Create a Service object that exposes the deployment:
+``` bash
+kubectl expose deployment hello-world --type=NodePort --name=example-service
+```
+
+Display information about the Service:
+``` bash
+kubectl describe services example-service
+```
+
+List the pods that are running the Hello World application:
+kubectl get pods --selector="run=load-balancer-example" --output=wide
+
+
+## Autoscaling
+https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/
+
+``` bash
+kubectl run php-apache --image=k8s.gcr.io/hpa-example --requests=cpu=200m --expose --port=80
+kubectl autoscale deployment php-apache --cpu-percent=50 --min=1 --max=10
+```
+
+## Limiting ressource
+https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/cpu-constraint-namespace/#before-you-begin
+
+#### NameSpace
+``` bash
+kubectl create namespace quota-mem-cpu-example
+```
+
+
+``` bash
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: mem-cpu-demo
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
+```
+
+``` bash
+kubectl create -f https://k8s.io/examples/admin/resource/quota-mem-cpu.yaml --namespace=quota-mem-cpu-example
+```
+
+``` bash
+kubectl get resourcequota mem-cpu-demo --namespace=quota-mem-cpu-example --output=yaml
+```
+
+
+#### Direct POD
+``` bash
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.12.2
+        ports:
+        - containerPort: 80
+      resources:
+          limits:
+            cpu: "2"
+            memory: "100Mi"
+          requests:
+            cpu: "500m"
+
+```
+
+
+
+
+## Init container
+``` bash
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp-pod
+  labels:
+    app: myapp
+spec:
+  containers:
+  - name: myapp-container
+    image: busybox
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  initContainers:
+  - name: init-myservice
+    image: busybox
+    command: ['sh', '-c', 'until nslookup myservice; do echo waiting for myservice; sleep 2; done;']
+  - name: init-mydb
+    image: busybox
+    command: ['sh', '-c', 'until nslookup mydb; do echo waiting for mydb; sleep 2; done;']
+```
