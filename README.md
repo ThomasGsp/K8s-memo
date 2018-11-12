@@ -29,6 +29,11 @@ kubectl get pods -n accounting
 kubectl get pods --show-labels
 kubectl get deployment,rs,pods -o json
 kubectl get pods -L system
+kubectl get cronjob date
+kubectl get jobs --watch
+kubectl get secrets --all-namespaces
+kubectl get LimitRange
+kubectl get LimitRange --all-namespaces
 
 kubectl rollout pause deployment/ghost
 kubectl rollout resume deployment/ghost
@@ -49,15 +54,20 @@ kubectl edit deployments dev-web
 kubectl label pods ghost-864655d77f-rnddk foo=bar
 
 kubectl delete rs rs-one --cascade=false
+kubectl delete cronjob date
 
 kubectl set image ds ds-one nginx=nginx:1.8.1-alpine
 
 kubectl describe secrets default-token-6chzc
+kubectl describe rs rs-one
 
 kubectl -n kube-system get secrets certificate-controller-token-j9psf  -o yaml
 kubectl config set-credentials -h
+kubectl config view
+
 kubeadm token -h
 kubeadm config -h
+
 ```
 
 ## Independants
@@ -326,20 +336,18 @@ https://www.mirantis.com/blog/scaling-kubernetes-daemonsets/
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
-  name: frontend
+   name: ds-one
 spec:
-  template:
-    metadata:
-      labels:
-        app: frontend-webserver
-    spec:
-      nodeSelector:
-        app: frontend-node
-      containers:
-        - name: webserver
-          image: nginx
-          ports:
-          - containerPort: 80
+   template:
+      metadata:
+         labels:
+            system: ReplicaOne
+      spec:
+         containers:
+         - name: nginx
+           image: nginx:1.7.9
+           ports:
+           - containerPort: 80
 ```
 
 #### Change strategy
@@ -347,24 +355,42 @@ spec:
 apiVersion: extensions/v1beta1
 kind: DaemonSet
 metadata:
-  name: frontend
+   name: ds-one
 spec:
-  updateStrategy: RollingUpdate
-    maxUnavailable: 1
-    minReadySeconds: 0
-  template:
-    metadata:
-      labels:
-        app: frontend-webserver
-    spec:
-      nodeSelector:
-        app: frontend-node
-      containers:
-        - name: webserver
-          image: nginx
-          ports:
-          - containerPort: 80
+   updateStrategy: RollingUpdate
+      maxUnavailable: 1
+      minReadySeconds: 0
+   template:
+      metadata:
+         labels:
+            system: ReplicaOne
+      spec:
+         containers:
+         - name: nginx
+           image: nginx:1.7.9
+           ports:
+           - containerPort: 80
 
+```
+
+## ReplicaSets
+``` bash
+apiVersion: extensions/v1beta1
+kind: ReplicaSet
+metadata:
+   name: rs-one
+spec:
+   replicas: 2
+   template:
+      metadata:
+         labels:
+            system: ReplicaOne
+      spec:
+         containers:
+         - name: nginx
+           image: nginx:1.7.9
+           ports:
+           - containerPort: 80
 ```
 
 ## Secrets
@@ -825,4 +851,14 @@ spec:
         backend:
           serviceName: s2
           servicePort: 80
+```
+
+## Logs
+``` bash
+find / -name "*apiserver*log"
+/var/log/pods/56c55117e68ed986eaddeb0f78ca405e/kube-apiserver_0.log
+/var/log/containers/kube-apiserver-lfs458-node-9q6r_kube-system_kube...
+
+locate apiserver
+...
 ```
