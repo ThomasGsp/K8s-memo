@@ -3,6 +3,63 @@
 
 # Index list
 
+
+# Commands list
+
+Monitor the progress for a Deployment
+``` bash kubectl rollout status ```
+
+Monitor the progress for a Deployment
+``` bash kubectl rollout status
+
+``` bash
+kubectl create namespace mem-example
+kubectl create ns linuxcon
+kubectl create secret generic mysql --from-literal=password=root
+
+
+kubectl --v=9 get pods
+
+kubectl get endpoints
+kubectl get pvc
+kubectl get secrets
+kubectl get configmap colors
+kubectl get nodes --show-labels
+kubectl get pods -n accounting
+kubectl get pods --show-labels
+kubectl get deployment,rs,pods -o json
+kubectl get pods -L system
+
+kubectl rollout pause deployment/ghost
+kubectl rollout resume deployment/ghost
+kubectl rollout history ds ds-one --revision=2
+
+kubectl exec busybox cat /etc/resolv.conf
+kubectl exec -it shell-demo -- /bin/bash -c 'echo $ilike'
+kubectl exec -ti busybox -- /bin/sh
+
+kubectl run -i -t busybox --image=busybox --restart=Never
+kubectl run busybox --image=busybox --command sleep 3600
+
+kubectl proxy --api-prefix=/
+kubectl logs date-1539006240-dhb78
+
+kubectl edit deployments dev-web
+
+kubectl label pods ghost-864655d77f-rnddk foo=bar
+
+kubectl delete rs rs-one --cascade=false
+
+kubectl set image ds ds-one nginx=nginx:1.8.1-alpine
+
+kubectl describe secrets default-token-6chzc
+
+kubectl -n kube-system get secrets certificate-controller-token-j9psf  -o yaml
+kubectl config set-credentials -h
+kubeadm token -h
+kubeadm config -h
+```
+
 ## Independants
 #### Using Zsh
 ``` bash
@@ -30,6 +87,21 @@ curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.29.0/minik
 chmod +x minikube
 mv minikube /usr/local/bin/
 minikube
+```
+
+
+
+### ETCD
+https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/
+
+#### Backup
+https://coreos.com/etcd/docs/latest/v2/admin_guide.html
+``` bash
+    etcdctl backup \
+      --data-dir %data_dir% \
+      [--wal-dir %wal_dir%] \
+      --backup-dir %backup_data_dir%
+      [--backup-wal-dir %backup_wal_dir%]
 ```
 
 ## Basic setting up with kubeadm
@@ -441,7 +513,7 @@ kubectl delete cronjob hello
 ## Create a service
 https://kubernetes.io/docs/concepts/services-networking/service/
 https://kubernetes.io/docs/tasks/access-application-cluster/service-access-application-cluster/
-
+https://medium.com/google-cloud/kubernetes-nodeport-vs-loadbalancer-vs-ingress-when-should-i-use-what-922f010849e0
 
 #### Basic example
 Run a Hello World application in your cluster:
@@ -475,6 +547,91 @@ List the pods that are running the Hello World application:
 kubectl get pods --selector="run=load-balancer-example" --output=wide
 
 
+#### Expose Node Port
+``` bash
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nodeport-service
+spec:
+  selector:
+    app: my-app
+  type: NodePort
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    nodePort: 30036
+    protocol: TCP
+```
+
+#### Expose Cluster
+``` bash
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-internal-service
+spec:
+  selector:
+    app: my-app
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+```
+
+
+#### Expose LB service
+``` bash
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: my-ingress
+spec:
+  backend:
+    serviceName: other
+    servicePort: 8080
+  rules:
+  - host: foo.mydomain.com
+    http:
+      paths:
+      - backend:
+          serviceName: foo
+          servicePort: 8080
+  - host: mydomain.com
+    http:
+      paths:
+      - path: /bar/*
+        backend:
+          serviceName: bar
+          servicePort: 8080
+
+```
+
+
+``` bash
+kind: Service
+apiVersion: v1
+metadata:
+  name: my-service
+spec:
+  selector:
+    app: MyApp
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9376
+  clusterIP: 10.0.171.239
+  loadBalancerIP: 78.11.24.19
+  type: LoadBalancer
+```
+#### Change Kind
+``` bash
+kubectl expose deployment nginx --type ClusterIP
+```
+
 ## Autoscaling
 https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale-walkthrough/
 
@@ -485,6 +642,7 @@ kubectl autoscale deployment php-apache --cpu-percent=50 --min=1 --max=10
 
 ## Limiting ressource
 https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/cpu-constraint-namespace/#before-you-begin
+https://kubernetes.io/docs/concepts/policy/resource-quotas/
 
 #### NameSpace
 ``` bash
@@ -503,6 +661,7 @@ spec:
     requests.memory: 1Gi
     limits.cpu: "2"
     limits.memory: 2Gi
+    persistentvolumeclaims: "4"
 ```
 
 ``` bash
@@ -567,4 +726,103 @@ spec:
   - name: init-mydb
     image: busybox
     command: ['sh', '-c', 'until nslookup mydb; do echo waiting for mydb; sleep 2; done;']
+```
+
+
+## Security
+https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+
+#### With an user ID
+kubectl apply -f https://k8s.io/examples/application/deployment.yaml
+``` bash
+apiVersion: v1
+kind: Pod
+metadata:
+  name: security-context-demo
+spec:
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  containers:
+  - name: nginx
+    image: nginx:1.12.2
+    ports:
+    - containerPort: 80
+    securityContext:
+      allowPrivilegeEscalation: false
+```
+
+#### Networking policy
+
+``` bash
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: test-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      role: nginx
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: 172.17.0.0/16
+        except:
+        - 172.17.1.0/24
+    - namespaceSelector:
+        matchLabels:
+          project: myproject
+    - podSelector:
+        matchLabels:
+          role: frontend
+    ports:
+    - protocol: TCP
+      port: 6379
+  egress:
+  - to:
+    - ipBlock:
+        cidr: 10.0.0.0/24
+    ports:
+    - protocol: TCP
+      port: 5978
+```
+
+
+#### Certificates
+https://kubernetes.io/docs/tasks/tls/certificate-rotation/
+https://sysdig.com/blog/kubernetes-security-rbac-tls/
+
+``` bash
+kubectl get csr
+```
+
+## Ingress Rules
+
+#### Basic Example:
+https://kubernetes.io/docs/concepts/services-networking/ingress/
+
+``` bash
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: test
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+  - host: foo.bar.com
+    http:
+      paths:
+      - path: /foo
+        backend:
+          serviceName: s1
+          servicePort: 80
+      - path: /bar
+        backend:
+          serviceName: s2
+          servicePort: 80
 ```
