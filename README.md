@@ -1,40 +1,36 @@
 
-# Kubernetes memo to prepare CKA - v 1.11.0 (Or just using k8s!)
+# Kubernetes Synthetic Command list (Oriented day-to-day work)
 
 # Index list
 
 
 # Commands list
 
-Monitor the progress for a Deployment
-``` bash kubectl rollout status ```
-
-Monitor the progress for a Deployment
-``` bash kubectl rollout status
-
 ``` bash
+
 kubectl create namespace mem-example
 kubectl create ns linuxcon
 kubectl create secret generic mysql --from-literal=password=root
-
 
 kubectl --v=9 get pods
 
 kubectl get endpoints
 kubectl get pvc
 kubectl get secrets
+kubectl get secrets --all-namespaces
 kubectl get configmap colors
 kubectl get nodes --show-labels
+kubectl get pods -L system
 kubectl get pods -n accounting
 kubectl get pods --show-labels
 kubectl get deployment,rs,pods -o json
-kubectl get pods -L system
+kubectl get cronjob
 kubectl get cronjob date
 kubectl get jobs --watch
-kubectl get secrets --all-namespaces
 kubectl get LimitRange
 kubectl get LimitRange --all-namespaces
 
+kubectl rollout status
 kubectl rollout pause deployment/ghost
 kubectl rollout resume deployment/ghost
 kubectl rollout history ds ds-one --revision=2
@@ -44,7 +40,7 @@ kubectl exec -it shell-demo -- /bin/bash -c 'echo $ilike'
 kubectl exec -ti busybox -- /bin/sh
 
 kubectl run -i -t busybox --image=busybox --restart=Never
-kubectl run busybox --image=busybox --command sleep 3600
+busybox
 
 kubectl proxy --api-prefix=/
 kubectl logs date-1539006240-dhb78
@@ -70,19 +66,19 @@ kubeadm config -h
 
 ```
 
-## Independants
-#### Using Zsh
+## Using Zsh
 ``` bash
 if [ $commands[kubectl] ]; then
   source <(kubectl completion zsh)
 fi
 ```
+
 or
 ``` bash
 plugins=(kubectl)
 ```
 
-#### Kubectl
+#### Kubectl from bin
 ``` bash
 ## Download
 wget https://storage.googleapis.com/kubernetes-release/release/v1.11.0/bin/linux/amd64/kubectl
@@ -91,7 +87,7 @@ chmod +x /usr/local/bin/kubectl
 /usr/local/bin/kubectl version
 ```
 
-#### Minikube
+#### Minikube from bin
 ``` bash
 curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.29.0/minikube-linux-amd64
 chmod +x minikube
@@ -100,11 +96,10 @@ minikube
 ```
 
 
-
-### ETCD
+## ETCD
 https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/
 
-#### Backup
+#### Backup etcd data
 https://coreos.com/etcd/docs/latest/v2/admin_guide.html
 ``` bash
     etcdctl backup \
@@ -117,7 +112,7 @@ https://coreos.com/etcd/docs/latest/v2/admin_guide.html
 ## Basic setting up with kubeadm
 https://v1-11.docs.kubernetes.io/docs/setup/independent/create-cluster-kubeadm/
 
-#### Docker (Master + worker)
+#### Docker install (Master + worker)
 ``` bash
 sudo apt-get install \
      apt-transport-https \
@@ -146,7 +141,7 @@ cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
-apt-get install -y kubelet=1.11.4-00 kubeadm=1.11.4-00 kubectl=1.11.4-00
+apt-get install -y kubelet kubeadm kubectl
 apt-mark hold kubelet kubeadm kubectl
 ```
 
@@ -165,13 +160,14 @@ kubeadm join 172.16.0.111:6443 --token pnaven.wxx..nu10c --discovery-token-ca-ce
 ```
 
 #### Calico network (Master)
+https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#pod-network
 ``` bash
 kubectl apply -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
 kubectl apply -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
 ```
 
 ## Cluster auditing && logs
-https://v1-11.docs.kubernetes.io/docs/tasks/debug-application-cluster/audit/
+https://kubernetes.io/docs/tasks/debug-application-cluster/audit/
 
 #### Testing
 ``` bash
@@ -220,31 +216,36 @@ spec:
         - containerPort: 80
 
 ```
-#### Scale this to 4 pods.
+#### Scale 4 pods.
 ``` bash
 kubectl scale deployment nginx-deployment --replicas=4
 ```
-#### Scale it back to 2 pods.
+
+#### DownScale 2 pods.
 ``` bash
 kubectl scale deployment nginx-deployment --replicas=2
 ```
-#### Upgrade nginx version to 1.13.8
+
+#### Upgrade nginx
 ``` bash
 kubectl edit deployment nginx-deployment
+# + Change nginx version
 ```
+
 #### Check the status of the upgrade
 ``` bash
 kubectl get pods -l app=nginx
 ```
-#### How do you do this in a way that you can see history of what happened?
+
+#### Rollout history for an deployment
 ``` bash
 kubectl rollout history deployment/nginx-deployment
 ```
+
 #### Undo the upgrade
 ``` bash
 kubectl rollout undo deployment/nginx-deployment
 ```
-
 
 ## Basic deployment -- without using a manifest (Busybox)
 
@@ -255,11 +256,12 @@ kubectl run busybox --image=busybox:1.28.4 --command -- sleep 3600
 
 #### Edit
 ``` bash
+kubectl get pods |grep busy
 kubectl edit pod busybox-c8d74cd49-64fzq
 ```
 
 ## Liveness and Readiness Probes
-https://v1-11.kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
+https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
 
 #### liveness
 The kubelet uses liveness probes to know when to restart a Container. For example, liveness probes could catch a deadlock, where an application is running, but unable to make progress. Restarting a Container in such a state can help to make the application more available despite bugs.
@@ -350,7 +352,7 @@ spec:
            - containerPort: 80
 ```
 
-#### Change strategy
+#### Change strategy for RollingUpdate
 ``` bash
 apiVersion: extensions/v1beta1
 kind: DaemonSet
@@ -498,7 +500,7 @@ spec:
           restartPolicy: OnFailure
 ```
 
-#### Create  direct (Basic)
+#### Create a direct Scheduled job (Basic)
 ``` bash
  kubectl run hello --schedule="*/1 * * * *" --restart=OnFailure --image=busybox -- /bin/sh -c "date; echo Hello from the Kubernetes cluster"
 ```
@@ -528,20 +530,13 @@ spec:
 ```
 
 
-#### Commands
-``` bash
-kubectl get cronjob
-kubectl get jobs --watch
-kubectl get cronjob hello
-kubectl delete cronjob hello
-```
 
 ## Create a service
 https://kubernetes.io/docs/concepts/services-networking/service/
 https://kubernetes.io/docs/tasks/access-application-cluster/service-access-application-cluster/
 https://medium.com/google-cloud/kubernetes-nodeport-vs-loadbalancer-vs-ingress-when-should-i-use-what-922f010849e0
 
-#### Basic example
+#### Basic Run example
 Run a Hello World application in your cluster:
 ``` bash
 kubectl run hello-world --replicas=2 --labels="run=load-balancer-example" --image=gcr.io/google-samples/node-hello:1.0  --port=8080
@@ -653,6 +648,7 @@ spec:
   loadBalancerIP: 78.11.24.19
   type: LoadBalancer
 ```
+
 #### Change Kind
 ``` bash
 kubectl expose deployment nginx --type ClusterIP
@@ -729,9 +725,6 @@ spec:
 
 ```
 
-
-
-
 ## Init container
 ``` bash
 apiVersion: v1
@@ -754,11 +747,10 @@ spec:
     command: ['sh', '-c', 'until nslookup mydb; do echo waiting for mydb; sleep 2; done;']
 ```
 
-
 ## Security
 https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 
-#### With an user ID
+### With an user ID
 kubectl apply -f https://k8s.io/examples/application/deployment.yaml
 ``` bash
 apiVersion: v1
@@ -778,7 +770,7 @@ spec:
       allowPrivilegeEscalation: false
 ```
 
-#### Networking policy
+### Networking policy
 
 ``` bash
 apiVersion: networking.k8s.io/v1
@@ -818,7 +810,7 @@ spec:
 ```
 
 
-#### Certificates
+### Certificates
 https://kubernetes.io/docs/tasks/tls/certificate-rotation/
 https://sysdig.com/blog/kubernetes-security-rbac-tls/
 
@@ -862,3 +854,5 @@ find / -name "*apiserver*log"
 locate apiserver
 ...
 ```
+
+## Disks
