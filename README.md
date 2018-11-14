@@ -14,6 +14,7 @@ kubectl create secret generic mysql --from-literal=password=root
 
 kubectl --v=9 get pods
 
+kubectl get all
 kubectl get endpoints
 kubectl get pvc
 kubectl get secrets
@@ -62,6 +63,7 @@ kubectl config set-credentials -h
 kubectl config view
 
 kubeadm token -h
+kubeadm token list
 kubeadm config -h
 
 ```
@@ -95,6 +97,12 @@ mv minikube /usr/local/bin/
 minikube
 ```
 
+#### Dashboard
+``` bash
+kubectl create -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+kubectl proxy
+https://<master-ip>:<apiserver-port>/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
+```
 
 ## ETCD
 https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/
@@ -855,4 +863,39 @@ locate apiserver
 ...
 ```
 
-## Disks
+## Disks / Volumes
+``` bash
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+   name: pv-volume1
+   labels:
+      type:local
+spec:
+   capacity:
+      storage: 10Gi
+   accessModes:
+      - ReadWriteOnce
+   hostPath:
+      path: "/mnt/localVol"
+
+```
+
+
+## Helm example with redis
+https://github.com/kubernetes/helm/releases
+``` bash
+curl -LO https://storage.googleapis.com/kubernetes-helm/helm-v2.8.2-linux-amd64.tar.gz
+tar -xvf helm-v2.8.2-linux-amd64.tar.gz
+mv linux-amd64/helm /usr/local/bin/
+
+helm init
+helm repo update
+
+helm search redis
+
+helm install stable/redis
+helm ls
+```
+
+## Monitoring
