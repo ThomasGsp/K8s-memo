@@ -37,11 +37,10 @@ kubectl rollout resume deployment/ghost
 kubectl rollout history ds ds-one --revision=2
 
 kubectl exec busybox cat /etc/resolv.conf
+kubectl exec -it security-context-demo -- sh
 kubectl exec -it shell-demo -- /bin/bash -c 'echo $ilike'
-kubectl exec -ti busybox -- /bin/sh
 
 kubectl run -i -t busybox --image=busybox --restart=Never
-busybox
 
 kubectl proxy --api-prefix=/
 kubectl logs date-1539006240-dhb78
@@ -57,6 +56,7 @@ kubectl set image ds ds-one nginx=nginx:1.8.1-alpine
 
 kubectl describe secrets default-token-6chzc
 kubectl describe rs rs-one
+kubectl describe ingress test
 
 kubectl -n kube-system get secrets certificate-controller-token-j9psf  -o yaml
 kubectl config set-credentials -h
@@ -65,6 +65,8 @@ kubectl config view
 kubeadm token -h
 kubeadm token list
 kubeadm config -h
+
+
 
 ```
 
@@ -107,9 +109,12 @@ https://<master-ip>:<apiserver-port>/api/v1/namespaces/kube-system/services/http
 ## ETCD
 https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/
 
-#### Backup etcd data
 https://coreos.com/etcd/docs/latest/v2/admin_guide.html
+
+### Backup
+https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/#backing-up-an-etcd-cluster
 ``` bash
+
     etcdctl backup \
       --data-dir %data_dir% \
       [--wal-dir %wal_dir%] \
@@ -120,7 +125,8 @@ https://coreos.com/etcd/docs/latest/v2/admin_guide.html
 ## Basic setting up with kubeadm
 https://v1-11.docs.kubernetes.io/docs/setup/independent/create-cluster-kubeadm/
 
-#### Docker install (Master + worker)
+#### Docker install (Master + worker) -- Debian
+https://docs.docker.com/install/linux/docker-ce/debian/#set-up-the-repository
 ``` bash
 sudo apt-get install \
      apt-transport-https \
@@ -140,6 +146,30 @@ add-apt-repository \
 apt-get update
 apt-get install docker-ce
 ```
+
+#### Docker install (Master + worker) -- Ubuntu
+https://docs.docker.com/install/linux/docker-ce/ubuntu/#set-up-the-repository
+``` bash
+sudo apt-get install \
+     apt-transport-https \
+     ca-certificates \
+     curl \
+     gnupg2 \
+     software-properties-common
+
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+apt-key fingerprint 0EBFCD88
+
+add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable"
+
+apt-get update
+apt-get install docker-ce
+```
+
+
 
 #### Kubernetes (Master + worker)
 ``` bash
@@ -162,9 +192,16 @@ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 
+#### Load directly k8s env
+``` bash
+export KUBECONFIG=/etc/kubernetes/admin.conf
+```
+
+
 #### Joining your nodes (Worker)
 ``` bash
 kubeadm join 172.16.0.111:6443 --token pnaven.wxx..nu10c --discovery-token-ca-cert-hash sha256:3e....4ed39f9b9ede
+
 ```
 
 #### Calico network (Master)
@@ -196,7 +233,7 @@ kubectl apply -f https://raw.githubusercontent.com/ThomasGsp/K8s-memo/master/res
 kubectl apply -f https://raw.githubusercontent.com/ThomasGsp/K8s-memo/master/ressources/audit/audit-policy-min.yaml
 ```
 
-## Basic deployment
+## Basic deployment / upgrade / rollback / checks
 
 #### Nginx version 1.7.9 in 2 pods
 kubectl apply -f https://k8s.io/examples/application/deployment.yaml
@@ -224,6 +261,12 @@ spec:
         - containerPort: 80
 
 ```
+
+or OneLiner
+``` bash
+kubectl run nginx-deployment --replicas=2 --labels="app=nginx" --image=nginx:1.12.2  --port=80
+```
+
 #### Scale 4 pods.
 ``` bash
 kubectl scale deployment nginx-deployment --replicas=4
@@ -409,8 +452,8 @@ https://kubernetes.io/docs/concepts/configuration/secret/
 #### Create secret
 ``` bash
 # Create files needed for rest of example.
-$ echo -n 'admin' > ./username.txt
-$ echo -n '1f2d1e2e67df' > ./password.txt
+echo -n 'admin' > ./username.txt
+echo -n '1f2d1e2e67df' > ./password.txt
 ```
 
 ``` bash
@@ -443,12 +486,12 @@ spec:
         valueFrom:
           secretKeyRef:
             name: mysecret
-            key: username
+            key: MYUSER-CHANGE-IT
       - name: SECRET_PASSWORD
         valueFrom:
           secretKeyRef:
             name: mysecret
-            key: password
+            key: MYPASSWORD-CHANGE-IT
   restartPolicy: Never
 ```
 
@@ -517,7 +560,7 @@ spec:
 #### Create with yaml (Advanced //)
 ``` bash
 apiVersion: batch/v1beta1
-kind: CronJob
+kind: Job
 metadata:
   name: hello
 spec:
@@ -565,6 +608,8 @@ kubectl describe replicasets
 Create a Service object that exposes the deployment:
 ``` bash
 kubectl expose deployment hello-world --type=NodePort --name=example-service
+kubectl expose deployment hello-world --type=ClusterIP --name=example-service
+kubectl expose deployment hello-world --type=LoadBalancer --name=example-service
 ```
 
 Display information about the Service:
@@ -700,10 +745,26 @@ kubectl create -f https://k8s.io/examples/admin/resource/quota-mem-cpu.yaml --na
 
 ``` bash
 kubectl get resourcequota mem-cpu-demo --namespace=quota-mem-cpu-example --output=yaml
+kubectl get resourcequota --all-namespaces
 ```
 
 
 #### Direct POD
+``` bash
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: mem-limit-range
+spec:
+  limits:
+  - default:
+      memory: 512Mi
+    defaultRequest:
+      memory: 256Mi
+    type: Container
+
+```
+
 ``` bash
 apiVersion: apps/v1
 kind: Deployment
@@ -724,16 +785,12 @@ spec:
         image: nginx:1.12.2
         ports:
         - containerPort: 80
-      resources:
-          limits:
-            cpu: "2"
-            memory: "100Mi"
-          requests:
-            cpu: "500m"
 
 ```
 
 ## Init container
+https://kubernetes.io/docs/tasks/configure-pod-container/configure-pod-initialization/
+
 ``` bash
 apiVersion: v1
 kind: Pod
@@ -755,10 +812,46 @@ spec:
     command: ['sh', '-c', 'until nslookup mydb; do echo waiting for mydb; sleep 2; done;']
 ```
 
+
+``` bash
+apiVersion: v1
+kind: Pod
+metadata:
+  name: init-demo
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: workdir
+      mountPath: /usr/share/nginx/html
+  # These containers are run during pod initialization
+
+  initContainers:
+  - name: install
+    image: busybox
+    command:
+    - wget
+    - "-O"
+    - "/work-dir/index.html"
+    - http://kubernetes.io
+    volumeMounts:
+    - name: workdir
+      mountPath: "/work-dir"
+  dnsPolicy: Default
+  volumes:
+  - name: workdir
+    emptyDir: {}
+```
+
 ## Security
 https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 
-### With an user ID
+### With an user UID
+https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+
 kubectl apply -f https://k8s.io/examples/application/deployment.yaml
 ``` bash
 apiVersion: v1
@@ -853,7 +946,14 @@ spec:
           servicePort: 80
 ```
 
+``` bash
+kubectl describe ingress test
+```
 ## Logs
+``` bash
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/audit/audit-policy.yaml
+```
+
 ``` bash
 find / -name "*apiserver*log"
 /var/log/pods/56c55117e68ed986eaddeb0f78ca405e/kube-apiserver_0.log
@@ -864,6 +964,8 @@ locate apiserver
 ```
 
 ## Disks / Volumes
+
+### PersistentVolume
 ``` bash
 kind: PersistentVolume
 apiVersion: v1
@@ -880,6 +982,8 @@ spec:
       path: "/mnt/localVol"
 
 ```
+
+
 
 
 ## Helm example with redis
@@ -899,3 +1003,14 @@ helm ls
 ```
 
 ## Monitoring
+
+
+##
+Rev 2 4 6 8 11 13
+- Volumes disks
+- Set master without docker prd
+- Cluster auditing
+- Secrets
+- DryRun
+- Limit
+- External LB
