@@ -2,6 +2,7 @@
 # Kubernetes Synthetic Command list (Oriented day-to-day work)
 
 # Index list
+[Commands list](# Commands list)
 
 
 # Commands list
@@ -66,8 +67,6 @@ kubeadm token -h
 kubeadm token list
 kubeadm config -h
 
-
-
 ```
 
 ## Using Zsh
@@ -78,6 +77,7 @@ fi
 ```
 
 or
+
 ``` bash
 plugins=(kubectl)
 ```
@@ -168,7 +168,6 @@ add-apt-repository \
 apt-get update
 apt-get install docker-ce
 ```
-
 
 
 #### Kubernetes (Master + worker)
@@ -983,9 +982,6 @@ spec:
 
 ```
 
-
-
-
 ## Helm example with redis
 https://github.com/kubernetes/helm/releases
 ``` bash
@@ -1006,7 +1002,7 @@ helm ls
 
 
 ##
-Rev 2 4 6 8 11 13
+Rev 2 4 6 8 11 13 18
 - Volumes disks
 - Set master without docker prd
 - Cluster auditing
@@ -1014,3 +1010,4 @@ Rev 2 4 6 8 11 13
 - DryRun
 - Limit
 - External LB
+- switch between env
