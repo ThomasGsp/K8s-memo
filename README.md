@@ -2,7 +2,7 @@
 # Kubernetes Synthetic Command list (Oriented day-to-day work)
 
 # Index list
-[Commands list](# Commands list)
+[Commands list](#Commands-list)
 
 
 # Commands list
