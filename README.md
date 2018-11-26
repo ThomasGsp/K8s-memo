@@ -1,11 +1,9 @@
 
 # Kubernetes Synthetic Command list (Oriented day-to-day work)
 
-# Index list
-[Commands list](#Commands-list)
-
 
 # Commands list
+https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands
 
 ``` bash
 
@@ -42,6 +40,10 @@ kubectl exec -it security-context-demo -- sh
 kubectl exec -it shell-demo -- /bin/bash -c 'echo $ilike'
 
 kubectl run -i -t busybox --image=busybox --restart=Never
+kubectl run nginx --image=nginx --dry-run
+kubectl run nginx --image=nginx --replicas=5
+kubectl run pi --schedule="0/5 * * * ?" --image=perl --restart=OnFailure -- perl -Mbignum=bpi -wle 'print bpi(2000)'
+
 
 kubectl proxy --api-prefix=/
 kubectl logs date-1539006240-dhb78
@@ -61,15 +63,28 @@ kubectl describe ingress test
 
 kubectl -n kube-system get secrets certificate-controller-token-j9psf  -o yaml
 kubectl config set-credentials -h
+kubectl config use-context kubernetes
 kubectl config view
 
 kubeadm token -h
 kubeadm token list
 kubeadm config -h
-
 ```
 
+## Tips
+
+``` bash
+kubectl get pods | awk -F' ' '{print $1}' | xargs  kubectl delete pods
+```
+
+``` bash
+curl -o cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
+curl -o cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
+chmod +x cfssl cfssljson
+mv cfssl cfssljson /usr/local/bin/
+```
 ## Using Zsh
+
 ``` bash
 if [ $commands[kubectl] ]; then
   source <(kubectl completion zsh)
@@ -79,7 +94,16 @@ fi
 or
 
 ``` bash
+# Oh-My-Zsh
+apt install zsh
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+
+vi ~/.zshrc
+
 plugins=(kubectl)
+ZSH_THEME="pygmalion"
+
+source ~/.zshrc
 ```
 
 #### Kubectl from bin
@@ -222,15 +246,8 @@ kubectl get pods -o wide --show-labels --all-namespaces
 kubectl get svc  -o wide --show-labels --all-namespaces
 ```
 
-#### Full log
-``` bash
-kubectl apply -f https://raw.githubusercontent.com/ThomasGsp/K8s-memo/master/ressources/audit-policy-full.yaml
-```
 
-#### Log all requests at the Metadata level.
-``` bash
-kubectl apply -f https://raw.githubusercontent.com/ThomasGsp/K8s-memo/master/ressources/audit/audit-policy-min.yaml
-```
+
 
 ## Basic deployment / upgrade / rollback / checks
 
@@ -451,13 +468,35 @@ https://kubernetes.io/docs/concepts/configuration/secret/
 #### Create secret
 ``` bash
 # Create files needed for rest of example.
-echo -n 'admin' > ./username.txt
-echo -n '1f2d1e2e67df' > ./password.txt
+echo -n 'admin' > ./username
+echo -n '1f2d1e2e67df' > ./password
 ```
 
 ``` bash
-kubectl create secret generic db-user-pass --from-file=./username.txt --from-file=./password.txt
+kubectl create secret generic db-user-pass --from-file=./username --from-file=./password
 ```
+
+OR
+
+``` bash
+echo -n 'admin' | base64
+YWRtaW4=
+echo -n '1f2d1e2e67df' | base64
+MWYyZDFlMmU2N2Rm
+```
+
+``` bash
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysecret
+type: Opaque
+data:
+  username: YWRtaW4=
+  password: MWYyZDFlMmU2N2Rm
+```
+
+
 
 ``` bash
 kubectl get secrets
@@ -475,7 +514,7 @@ https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-envir
 apiVersion: v1
 kind: Pod
 metadata:
-  name: secret-env-pod
+  name: db-user-pass
 spec:
   containers:
   - name: mycontainer
@@ -485,12 +524,12 @@ spec:
         valueFrom:
           secretKeyRef:
             name: mysecret
-            key: MYUSER-CHANGE-IT
+            key: password
       - name: SECRET_PASSWORD
         valueFrom:
           secretKeyRef:
             name: mysecret
-            key: MYPASSWORD-CHANGE-IT
+            key: password
   restartPolicy: Never
 ```
 
@@ -701,6 +740,12 @@ spec:
   type: LoadBalancer
 ```
 
+https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/
+``` bash
+kubectl expose rc example --port=8765 --target-port=9376 --name=example-service --type=LoadBalancer
+```
+
+
 #### Change Kind
 ``` bash
 kubectl expose deployment nginx --type ClusterIP
@@ -848,9 +893,10 @@ spec:
 ## Security
 https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 
-### With an user UID
+### With an user UID (POD)
 https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 
+#### (POD)
 kubectl apply -f https://k8s.io/examples/application/deployment.yaml
 ``` bash
 apiVersion: v1
@@ -868,6 +914,24 @@ spec:
     - containerPort: 80
     securityContext:
       allowPrivilegeEscalation: false
+```
+
+#### (Container)
+``` bash
+apiVersion: v1
+kind: Pod
+metadata:
+  name: security-context-demo-2
+spec:
+  securityContext:
+    runAsUser: 1000
+  containers:
+  - name: sec-ctx-demo-2
+    image: gcr.io/google-samples/node-hello:1.0
+    securityContext:
+      runAsUser: 2000
+      allowPrivilegeEscalation: false
+
 ```
 
 ### Networking policy
@@ -963,9 +1027,11 @@ locate apiserver
 ```
 
 ## Disks / Volumes
+https://kubernetes.io/docs/tasks/configure-pod-container/configure-volume-storage/
 
 ### PersistentVolume
 ``` bash
+# SINGLE NODE ONLY
 kind: PersistentVolume
 apiVersion: v1
 metadata:
@@ -981,6 +1047,100 @@ spec:
       path: "/mnt/localVol"
 
 ```
+
+#### PersistentVolume NFS
+``` bash
+# OPTIONAL
+apt-get install -y nfs-kernel-server
+mkdir /opt/sfw
+chmod 1777 /opt/sfw/
+echo "/opt/sfw/ *(rw,sync,no_root_squash,subtree_check)" >> /etc/exports
+exportfs -ra
+```
+
+``` bash
+# OPTIONAL
+apt-get -y install nfs-common
+mount NFS-SERVER-NAME:/opt/sfw /mnt
+```
+
+
+``` bash
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: myclaim
+spec:
+  capacity:
+     storage: 1Gi
+  accessModes:
+     - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    path: /opt/sfw
+    server: NFS-SERVER-NAME
+    readOnly: false
+```
+
+
+
+### PersistentVolumeClaim
+``` bash
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: myclaim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: slow
+  selector:
+    matchLabels:
+      release: "stable"
+```
+
+
+### Pod Volume Claim
+``` bash
+kind: Pod
+apiVersion: v1
+metadata:
+  name: mypod
+spec:
+  containers:
+    - name: myfrontend
+      image: nginx
+      volumeMounts:
+      - mountPath: "/var/www/html"
+        name: mypd
+  volumes:
+    - name: mypd
+      persistentVolumeClaim:
+        claimName: myclaim
+```
+
+### Pod with emptyDir (Very limited usage)
+``` bash
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis
+spec:
+  containers:
+  - name: redis
+    image: redis
+    volumeMounts:
+    - name: redis-storage
+      mountPath: /data/redis
+  volumes:
+  - name: redis-storage
+    emptyDir: {}
+```
+
 
 ## Helm example with redis
 https://github.com/kubernetes/helm/releases
@@ -999,15 +1159,3 @@ helm ls
 ```
 
 ## Monitoring
-
-
-##
-Rev 2 4 6 8 11 13 18
-- Volumes disks
-- Set master without docker prd
-- Cluster auditing
-- Secrets
-- DryRun
-- Limit
-- External LB
-- switch between env
