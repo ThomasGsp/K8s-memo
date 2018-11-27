@@ -4,7 +4,7 @@
 
 # Commands list
 https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands
-
+https://kubernetes.io/docs/reference/kubectl/cheatsheet/
 ``` bash
 
 kubectl create namespace mem-example
@@ -66,9 +66,16 @@ kubectl config set-credentials -h
 kubectl config use-context kubernetes
 kubectl config view
 
+kubectl top
+kubectl get pv --sort-by=
+
+
 kubeadm token -h
 kubeadm token list
 kubeadm config -h
+
+
+
 ```
 
 ## Tips
@@ -132,8 +139,10 @@ https://<master-ip>:<apiserver-port>/api/v1/namespaces/kube-system/services/http
 
 ## ETCD
 https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/
-
+https://www.mirantis.com/blog/everything-you-ever-wanted-to-know-about-using-etcd-with-kubernetes-v1-6-but-were-afraid-to-ask/
 https://coreos.com/etcd/docs/latest/v2/admin_guide.html
+
+
 
 ### Backup
 https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/#backing-up-an-etcd-cluster
@@ -146,6 +155,10 @@ https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/#back
       [--backup-wal-dir %backup_wal_dir%]
 ```
 
+``` bash
+mkdir /backuptest
+etcdctl backup --data-dir /var/lib/etcd/ --backup-dir /backuptest
+```
 ## Basic setting up with kubeadm
 https://v1-11.docs.kubernetes.io/docs/setup/independent/create-cluster-kubeadm/
 
@@ -566,6 +579,7 @@ spec:
 
 ## Scheduled Job
 https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/
+https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/
 
 #### Create with yaml (Basic)
 ``` bash
@@ -597,25 +611,20 @@ spec:
 
 #### Create with yaml (Advanced //)
 ``` bash
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: Job
 metadata:
   name: hello
 spec:
   parallelism: 5
   completions: 10
-  jobTemplate:
+  template:
     spec:
-      template:
-        spec:
-          containers:
-          - name: hello
-            image: busybox
-            args:
-            - /bin/sh
-            - -c
-            - date; echo Hello from the Kubernetes cluster
-          restartPolicy: OnFailure
+      containers:
+      - name: hello
+        image: busybox
+        command: ["/bin/sh",  "-c", "date; echo Hello from the Kubernetes cluster"]
+      restartPolicy: Never
 ```
 
 
@@ -935,6 +944,7 @@ spec:
 ```
 
 ### Networking policy
+https://kubernetes.io/docs/concepts/services-networking/network-policies/
 
 ``` bash
 apiVersion: networking.k8s.io/v1
@@ -981,6 +991,10 @@ https://sysdig.com/blog/kubernetes-security-rbac-tls/
 ``` bash
 kubectl get csr
 ```
+
+### Authentication 
+https://kubernetes.io/docs/reference/access-authn-authz/authentication/
+
 
 ## Ingress Rules
 
