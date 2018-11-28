@@ -1029,8 +1029,9 @@ https://kubernetes.io/docs/reference/access-authn-authz/authentication/
 
 ## Ingress Rules
 
-### Basic Example:
+### Basic Example (Nginx controler + Backend + ingress service):
 https://kubernetes.io/docs/concepts/services-networking/ingress/
+(TO DO)
 
 ``` bash
 apiVersion: extensions/v1beta1
@@ -1057,6 +1058,149 @@ spec:
 ``` bash
 kubectl describe ingress test
 ```
+
+
+### Advanced Example (deployment + rbac + role + binding Traefik controler + Backend + ingress service):
+https://kubernetes.io/docs/concepts/services-networking/ingress/
+
+#### Deployment + Backend
+``` bash
+kubectl create deployment secondapp --image=nginx
+kubectl expose deployment secondapp --type=NodePort --port=80
+```
+
+#### rbac
+ingress.rbac.yaml
+``` bash
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: traefik-ingress-controller
+rules:
+  - apiGroups:
+    - ""
+    resources:
+      - services
+      - endpoints
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: traefik-ingress-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: traefik-ingress-controller
+subjects:
+- kind: ServiceAccount
+  name: traefik-ingress-controller
+  namespace: kube-system
+```
+
+
+#### role + binding Traefik controler
+traefik-ds.yaml
+``` bash
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: traefik-ingress-controller
+  namespace: kube-system
+---
+kind: DaemonSet
+apiVersion: extensions/v1beta1
+metadata:
+  name: traefik-ingress-controller
+  namespace: kube-system
+  labels:
+    k8s-app: traefik-ingress-lb
+spec:
+  template:
+    metadata:
+      labels:
+        k8s-app: traefik-ingress-lb
+        name: traefik-ingress-lb
+    spec:
+      serviceAccountName: traefik-ingress-controller
+      terminationGracePeriodSeconds: 60
+      hostNetwork: true
+      containers:
+      - image: traefik
+        name: traefik-ingress-lb
+        ports:
+        - name: http
+          containerPort: 80
+          hostPort: 80
+        - name: admin
+          containerPort: 8080
+          hostPort: 8080
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+            add:
+            - NET_BIND_SERVICE
+        args:
+        - --api
+        - --kubernetes
+        - --logLevel=INFO
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: traefik-ingress-service
+  namespace: kube-system
+spec:
+  selector:
+    k8s-app: traefik-ingress-lb
+  ports:
+    - protocol: TCP
+      port: 80
+      name: web
+    - protocol: TCP
+      port: 8080
+      name: admin
+```
+#### ingress service
+ingress.rule.yaml
+``` bash
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress-test
+  annotations:
+    kubernetes.io/ingress.class: traefik
+spec:
+  rules:
+  - host: www.example.com
+    http:
+      paths:
+      - backend:
+          serviceName: secondapp
+          servicePort: 80
+        path: /
+```
+
+#### Quick test
+`` bash
+curl -H "Host: www.example.com" http://clusterip/
+```
+
 
 
 ## Logs debug
