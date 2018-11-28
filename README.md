@@ -264,9 +264,7 @@ apt-mark hold kubelet
 ### Joining your nodes (Worker)
 ``` bash
 kubeadm join 172.16.0.111:6443 --token pnaven.wxx..nu10c --discovery-token-ca-cert-hash sha256:3e....4ed39f9b9ede
-
 ```
-
 
 ## Cluster auditing && logs
 https://kubernetes.io/docs/tasks/debug-application-cluster/audit/
@@ -1031,7 +1029,12 @@ https://kubernetes.io/docs/reference/access-authn-authz/authentication/
 
 ### Basic Example (Nginx controler + Backend + ingress service):
 https://kubernetes.io/docs/concepts/services-networking/ingress/
-(TO DO)
+
+#### Deployment + Backend
+``` bash
+kubectl create deployment app --image=nginx
+kubectl expose deployment app --type=NodePort --port=80
+```
 
 ``` bash
 apiVersion: extensions/v1beta1
@@ -1047,16 +1050,18 @@ spec:
       paths:
       - path: /foo
         backend:
-          serviceName: s1
+          serviceName: app
           servicePort: 80
       - path: /bar
         backend:
-          serviceName: s2
+          serviceName: app
           servicePort: 80
 ```
 
 ``` bash
 kubectl describe ingress test
+kubectl get svc
+curl -H "Host: foo.bar.com/foo" http://10.233.35.53/
 ```
 
 
@@ -1176,6 +1181,7 @@ spec:
       port: 8080
       name: admin
 ```
+
 #### ingress service
 ingress.rule.yaml
 ``` bash
