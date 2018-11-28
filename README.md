@@ -3,6 +3,10 @@
 ## CTRL + F is your friend
 
 ## Ressources links
+[kubernetes.io/kubectl](https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands)
+
+[kubernetes.io/cheatsheet](https://kubernetes.io/docs/reference/kubectl/cheatsheet/)
+
 [kubernetes.io](https://kubernetes.io/docs/)
 
 [kubernetesbyexample](http://kubernetesbyexample.com/)
