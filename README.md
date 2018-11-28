@@ -1,8 +1,9 @@
 
-# Kubernetes Synthetic Command list (Oriented day-to-day work)
+# Kubernetes synthetic command list (Oriented day-to-day work)
+## CTRL + F is your friend
 
 
-# Commands list
+## Commands list
 https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands
 https://kubernetes.io/docs/reference/kubectl/cheatsheet/
 ``` bash
@@ -69,27 +70,25 @@ kubectl config view
 kubectl top
 kubectl get pv --sort-by=
 
-
 kubeadm token -h
 kubeadm token list
 kubeadm config -h
-
-
-
 ```
 
-## Tips
-
+## Delete all pods
 ``` bash
 kubectl get pods | awk -F' ' '{print $1}' | xargs  kubectl delete pods
 ```
 
+
+## Install ssl tools
 ``` bash
 curl -o cfssl https://pkg.cfssl.org/R1.2/cfssl_linux-amd64
 curl -o cfssljson https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64
 chmod +x cfssl cfssljson
 mv cfssl cfssljson /usr/local/bin/
 ```
+
 ## Using Zsh
 
 ``` bash
@@ -113,7 +112,7 @@ ZSH_THEME="pygmalion"
 source ~/.zshrc
 ```
 
-#### Kubectl from bin
+## Kubectl from bin
 ``` bash
 ## Download
 wget https://storage.googleapis.com/kubernetes-release/release/v1.11.0/bin/linux/amd64/kubectl
@@ -122,7 +121,7 @@ chmod +x /usr/local/bin/kubectl
 /usr/local/bin/kubectl version
 ```
 
-#### Minikube from bin
+## Minikube from bin
 ``` bash
 curl -Lo minikube https://storage.googleapis.com/minikube/releases/v0.29.0/minikube-linux-amd64
 chmod +x minikube
@@ -130,7 +129,7 @@ mv minikube /usr/local/bin/
 minikube
 ```
 
-#### Dashboard
+## Dashboard
 ``` bash
 kubectl create -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
 kubectl proxy
@@ -142,9 +141,7 @@ https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/
 https://www.mirantis.com/blog/everything-you-ever-wanted-to-know-about-using-etcd-with-kubernetes-v1-6-but-were-afraid-to-ask/
 https://coreos.com/etcd/docs/latest/v2/admin_guide.html
 
-
-
-### Backup
+### etcd Backup
 https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/#backing-up-an-etcd-cluster
 ``` bash
 
@@ -159,10 +156,12 @@ https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/#back
 mkdir /backuptest
 etcdctl backup --data-dir /var/lib/etcd/ --backup-dir /backuptest
 ```
+
+
 ## Basic setting up with kubeadm
 https://v1-11.docs.kubernetes.io/docs/setup/independent/create-cluster-kubeadm/
 
-#### Docker install (Master + worker) -- Debian
+### Docker install (Master + worker) -- Debian
 https://docs.docker.com/install/linux/docker-ce/debian/#set-up-the-repository
 ``` bash
 sudo apt-get install \
@@ -184,7 +183,7 @@ apt-get update
 apt-get install docker-ce
 ```
 
-#### Docker install (Master + worker) -- Ubuntu
+### Docker install (Master + worker) -- Ubuntu
 https://docs.docker.com/install/linux/docker-ce/ubuntu/#set-up-the-repository
 ``` bash
 sudo apt-get install \
@@ -207,7 +206,7 @@ apt-get install docker-ce
 ```
 
 
-#### Kubernetes (Master + worker)
+### Kubernetes (Master + worker)
 ``` bash
 apt-get update && apt-get install -y apt-transport-https curl
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
@@ -215,12 +214,14 @@ cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
-apt-get install -y kubelet kubeadm kubectl
-apt-mark hold kubelet kubeadm kubectl
 ```
 
-#### Kubernetes Init (Master)
+
+### Kubernetes Master
 ``` bash
+apt-get install -y kubelet kubeadm kubectl
+apt-mark hold kubelet kubeadm kubectl
+
 kubeadm init  --pod-network-cidr=192.168.0.0/16
 
 mkdir -p $HOME/.kube
@@ -228,29 +229,36 @@ sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 ```
 
-#### Load directly k8s env
+### Load k8s env
 ``` bash
 export KUBECONFIG=/etc/kubernetes/admin.conf
 ```
 
-
-#### Joining your nodes (Worker)
-``` bash
-kubeadm join 172.16.0.111:6443 --token pnaven.wxx..nu10c --discovery-token-ca-cert-hash sha256:3e....4ed39f9b9ede
-
-```
-
-#### Calico network (Master)
+### Calico network (play on Master)
 https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#pod-network
 ``` bash
 kubectl apply -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/rbac-kdd.yaml
 kubectl apply -f https://docs.projectcalico.org/v3.1/getting-started/kubernetes/installation/hosted/kubernetes-datastore/calico-networking/1.7/calico.yaml
 ```
 
+### Kubernetes Worker
+``` bash
+apt-get install -y kubelet
+apt-mark hold kubelet
+```
+
+
+### Joining your nodes (Worker)
+``` bash
+kubeadm join 172.16.0.111:6443 --token pnaven.wxx..nu10c --discovery-token-ca-cert-hash sha256:3e....4ed39f9b9ede
+
+```
+
+
 ## Cluster auditing && logs
 https://kubernetes.io/docs/tasks/debug-application-cluster/audit/
 
-#### Testing
+### Testing
 ``` bash
 kubectl cluster-info
 kubectl get nodes
@@ -259,12 +267,9 @@ kubectl get pods -o wide --show-labels --all-namespaces
 kubectl get svc  -o wide --show-labels --all-namespaces
 ```
 
-
-
-
 ## Basic deployment / upgrade / rollback / checks
 
-#### Nginx version 1.7.9 in 2 pods
+### Nginx version 1.7.9 in 2 pods
 kubectl apply -f https://k8s.io/examples/application/deployment.yaml
 ``` bash
 apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
@@ -291,65 +296,62 @@ spec:
 
 ```
 
-or OneLiner
+### Create without using a manifest (Busybox / nginx) -- Option 2
 ``` bash
 kubectl run nginx-deployment --replicas=2 --labels="app=nginx" --image=nginx:1.12.2  --port=80
+kubectl run busybox --image=busybox:1.28.4 --command -- sleep 3600
 ```
 
-#### Scale 4 pods.
+### Scale 4 pods.
 ``` bash
 kubectl scale deployment nginx-deployment --replicas=4
 ```
 
-#### DownScale 2 pods.
+### DownScale 2 pods.
 ``` bash
 kubectl scale deployment nginx-deployment --replicas=2
 ```
 
-#### Upgrade nginx
+### Upgrade nginx
 ``` bash
 kubectl edit deployment nginx-deployment
 # + Change nginx version
 ```
 
-#### Check the status of the upgrade
+### Check the status of the upgrade
 ``` bash
 kubectl get pods -l app=nginx
 ```
 
-#### Rollout history for an deployment
+### Rollout history for an deployment
 ``` bash
 kubectl rollout history deployment/nginx-deployment
 ```
 
-#### Undo the upgrade
+### Undo the upgrade
 ``` bash
 kubectl rollout undo deployment/nginx-deployment
 ```
 
-## Basic deployment -- without using a manifest (Busybox)
 
-#### Create
-``` bash
-kubectl run busybox --image=busybox:1.28.4 --command -- sleep 3600
-```
-
-#### Edit
+### Hot edit
 ``` bash
 kubectl get pods |grep busy
 kubectl edit pod busybox-c8d74cd49-64fzq
 ```
 
+
+
 ## Liveness and Readiness Probes
 https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/
 
-#### liveness
+### liveness
 The kubelet uses liveness probes to know when to restart a Container. For example, liveness probes could catch a deadlock, where an application is running, but unable to make progress. Restarting a Container in such a state can help to make the application more available despite bugs.
 
-#### readiness
+### readiness
 The kubelet uses readiness probes to know when a Container is ready to start accepting traffic. A Pod is considered ready when all of its Containers are ready. One use of this signal is to control which Pods are used as backends for Services. When a Pod is not ready, it is removed from Service load balancers.
 
-#### Examples
+### Examples
 
 ``` bash
 apiVersion: v1
@@ -413,7 +415,7 @@ spec:
 https://kubernetes.io/docs/concepts/workloads/controllers/daemonset/
 
 https://www.mirantis.com/blog/scaling-kubernetes-daemonsets/
-#### Create
+### Create
 ``` bash
 apiVersion: extensions/v1beta1
 kind: DaemonSet
@@ -432,7 +434,7 @@ spec:
            - containerPort: 80
 ```
 
-#### Change strategy for RollingUpdate
+### Change strategy for RollingUpdate
 ``` bash
 apiVersion: extensions/v1beta1
 kind: DaemonSet
@@ -475,7 +477,6 @@ spec:
            - containerPort: 80
 ```
 
-
 ## Static Pods
 https://kubernetes.io/docs/tasks/administer-cluster/static-pod/
 
@@ -503,10 +504,11 @@ spec:
           protocol: TCP
 EOF
 ```
+
 ## Secrets
 https://kubernetes.io/docs/concepts/configuration/secret/
 
-#### Create secret
+### Create secret
 ``` bash
 # Create files needed for rest of example.
 echo -n 'admin' > ./username
@@ -537,19 +539,17 @@ data:
   password: MWYyZDFlMmU2N2Rm
 ```
 
-
-
 ``` bash
 kubectl get secrets
 ```
 
-#### Decoding a Secret
+### Decoding a Secret
 ``` bash
 echo 'MWYyZDFlMmU2N2Rm' | base64 --decode
 1f2d1e2e67df
 ```
 
-#### Secrets from environment variables.
+### Secrets from environment variables.
 https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-environment-variables
 ``` bash
 apiVersion: v1
@@ -574,8 +574,7 @@ spec:
   restartPolicy: Never
 ```
 
-
-#### Secrets from a volume.
+### Secrets from a volume.
 ``` bash
 apiVersion: v1
 kind: Pod
@@ -605,11 +604,16 @@ spec:
         path: my-group/my-username
 ```
 
-## Scheduled Job
+## Scheduled / Cron Job
 https://kubernetes.io/docs/tasks/job/automated-tasks-with-cron-jobs/
 https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/
 
-#### Create with yaml (Basic)
+### Create a direct Scheduled job (Basic)
+``` bash
+ kubectl run hello --schedule="*/1 * * * *" --restart=OnFailure --image=busybox -- /bin/sh -c "date; echo Hello from the Kubernetes cluster"
+```
+
+### Create CronJob with yaml (Basic)
 ``` bash
 apiVersion: batch/v1beta1
 kind: CronJob
@@ -631,13 +635,7 @@ spec:
           restartPolicy: OnFailure
 ```
 
-#### Create a direct Scheduled job (Basic)
-``` bash
- kubectl run hello --schedule="*/1 * * * *" --restart=OnFailure --image=busybox -- /bin/sh -c "date; echo Hello from the Kubernetes cluster"
-```
-
-
-#### Create with yaml (Advanced //)
+### Create Job with yaml (Advanced )
 ``` bash
 apiVersion: batch/v1
 kind: Job
@@ -655,14 +653,12 @@ spec:
       restartPolicy: Never
 ```
 
-
-
 ## Create a service
 https://kubernetes.io/docs/concepts/services-networking/service/
 https://kubernetes.io/docs/tasks/access-application-cluster/service-access-application-cluster/
 https://medium.com/google-cloud/kubernetes-nodeport-vs-loadbalancer-vs-ingress-when-should-i-use-what-922f010849e0
 
-#### Basic Run example
+### Basic Run example
 Run a Hello World application in your cluster:
 ``` bash
 kubectl run hello-world --replicas=2 --labels="run=load-balancer-example" --image=gcr.io/google-samples/node-hello:1.0  --port=8080
@@ -695,8 +691,7 @@ kubectl describe services example-service
 List the pods that are running the Hello World application:
 kubectl get pods --selector="run=load-balancer-example" --output=wide
 
-
-#### Expose Node Port
+### Expose Node Port
 ``` bash
 apiVersion: v1
 kind: Service
@@ -714,7 +709,7 @@ spec:
     protocol: TCP
 ```
 
-#### Expose Cluster
+### Expose Cluster
 ``` bash
 apiVersion: v1
 kind: Service
@@ -731,8 +726,7 @@ spec:
     protocol: TCP
 ```
 
-
-#### Expose LB service
+### Expose LB service
 ``` bash
 apiVersion: extensions/v1beta1
 kind: Ingress
@@ -759,7 +753,6 @@ spec:
 
 ```
 
-
 ``` bash
 kind: Service
 apiVersion: v1
@@ -782,8 +775,7 @@ https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load
 kubectl expose rc example --port=8765 --target-port=9376 --name=example-service --type=LoadBalancer
 ```
 
-
-#### Change Kind
+### Change Kind
 ``` bash
 kubectl expose deployment nginx --type ClusterIP
 ```
@@ -800,11 +792,10 @@ kubectl autoscale deployment php-apache --cpu-percent=50 --min=1 --max=10
 https://kubernetes.io/docs/tasks/administer-cluster/manage-resources/cpu-constraint-namespace/#before-you-begin
 https://kubernetes.io/docs/concepts/policy/resource-quotas/
 
-#### NameSpace
+### NameSpace
 ``` bash
 kubectl create namespace quota-mem-cpu-example
 ```
-
 
 ``` bash
 apiVersion: v1
@@ -829,10 +820,7 @@ kubectl get resourcequota mem-cpu-demo --namespace=quota-mem-cpu-example --outpu
 kubectl get resourcequota --all-namespaces
 ```
 
-
-
-
-#### Direct POD
+### Direct in POD
 ``` bash
 apiVersion: v1
 kind: LimitRange
@@ -935,7 +923,7 @@ https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 ### With an user UID (POD)
 https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 
-#### (POD)
+### POD
 kubectl apply -f https://k8s.io/examples/application/deployment.yaml
 ``` bash
 apiVersion: v1
@@ -955,7 +943,7 @@ spec:
       allowPrivilegeEscalation: false
 ```
 
-#### (Container)
+### POD + Container
 ``` bash
 apiVersion: v1
 kind: Pod
@@ -1028,7 +1016,7 @@ https://kubernetes.io/docs/reference/access-authn-authz/authentication/
 
 ## Ingress Rules
 
-#### Basic Example:
+### Basic Example:
 https://kubernetes.io/docs/concepts/services-networking/ingress/
 
 ``` bash
@@ -1056,7 +1044,9 @@ spec:
 ``` bash
 kubectl describe ingress test
 ```
-## Logs
+
+
+## Logs debug
 ``` bash
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/website/master/content/en/examples/audit/audit-policy.yaml
 ```
@@ -1092,7 +1082,7 @@ spec:
 
 ```
 
-#### PersistentVolume NFS
+### PersistentVolume NFS
 ``` bash
 # OPTIONAL
 apt-get install -y nfs-kernel-server
@@ -1107,7 +1097,6 @@ exportfs -ra
 apt-get -y install nfs-common
 mount NFS-SERVER-NAME:/opt/sfw /mnt
 ```
-
 
 ``` bash
 kind: PersistentVolumeClaim
@@ -1127,8 +1116,7 @@ spec:
 ```
 
 
-
-### PersistentVolumeClaim
+### PersistentVolumeClaim + Pod Volume Claim
 ``` bash
 kind: PersistentVolumeClaim
 apiVersion: v1
@@ -1147,8 +1135,6 @@ spec:
       release: "stable"
 ```
 
-
-### Pod Volume Claim
 ``` bash
 kind: Pod
 apiVersion: v1
@@ -1222,7 +1208,7 @@ kubectl exec -ti $POD_NAME -- nslookup kubernetes
 ``` bash
 Install Docker (cf top)
 Install kubelet (cf top)
-Delete swap in available
+Delete swap if available
 Create the following systemd file
 ```
 
