@@ -2,6 +2,19 @@
 # Kubernetes synthetic command list (Oriented day-to-day work)
 ## CTRL + F is your friend
 
+## Ressources links
+[kubernetes.io](https://kubernetes.io/docs/)
+
+[kubernetesbyexample](http://kubernetesbyexample.com/)
+
+[metal-k8s.readthedocs.io](https://metal-k8s.readthedocs.io/en/latest/installation-guide/quickstart.html)
+
+[www.katacoda.com](https://www.katacoda.com/courses/kubernetes)
+
+[blog.csnet.me](https://blog.csnet.me/2018/04/on-prem-k8s-thw/)
+
+[kubespray](https://github.com/kubernetes-sigs/kubespray)
+
 
 ## Commands list
 https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands
