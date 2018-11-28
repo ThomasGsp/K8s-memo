@@ -475,6 +475,34 @@ spec:
            - containerPort: 80
 ```
 
+
+## Static Pods
+https://kubernetes.io/docs/tasks/administer-cluster/static-pod/
+
+/etc/kubernetes/kubelet.env or  /etc/kubelet.d/
+
+``` bash
+--pod-manifest-path=/etc/kubelet.d/
+```
+
+``` bash
+cat <<EOF >/etc/kubelet.d/static-web.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: static-web
+  labels:
+    role: myrole
+spec:
+  containers:
+    - name: web
+      image: nginx
+      ports:
+        - name: web
+          containerPort: 80
+          protocol: TCP
+EOF
+```
 ## Secrets
 https://kubernetes.io/docs/concepts/configuration/secret/
 
@@ -800,6 +828,8 @@ kubectl create -f https://k8s.io/examples/admin/resource/quota-mem-cpu.yaml --na
 kubectl get resourcequota mem-cpu-demo --namespace=quota-mem-cpu-example --output=yaml
 kubectl get resourcequota --all-namespaces
 ```
+
+
 
 
 #### Direct POD
@@ -1172,4 +1202,61 @@ helm install stable/redis
 helm ls
 ```
 
-## Monitoring
+## DNS
+``` bash
+# install
+kubectl apply -f https://raw.githubusercontent.com/mch1307/k8s-thw/master/coredns.yaml
+kubectl get pod --all-namespaces -l k8s-app=coredns -o wide
+
+# Test
+kubectl run busyboxv1284 --image=busybox:1.28.4 --command -- sleep 3600
+POD_NAME=$(kubectl get pods -l run=busybox -o jsonpath="{.items[0].metadata.name}")
+echo $POD_NAME
+kubectl exec -ti $POD_NAME -- nslookup kubernetes
+```
+
+
+## Standalone node kubelet
+
+### pre tasks
+``` bash
+Install Docker (cf top)
+Install kubelet (cf top)
+Delete swap in available
+Create the following systemd file
+```
+
+### Systemd conf
+``` bash
+/etc/systemd/system/kubelet.service
+
+[Unit]
+Description=kubelet
+
+[Service]
+Restart=always
+ExecStart=/usr/bin/kubelet \
+  --allow-privileged=true \
+  --enable-server=false \
+  --hostname-override=127.0.0.1 \
+  --pod-manifest-path=/etc/kubernetes/manifests
+
+EnvironmentFile=-/etc/kubernetes/kubelet.env
+
+[Install]
+WantedBy=multi-user.target
+
+```
+
+### Apply changes
+``` bash
+systemctl daemon-reload
+systemctl restart kubelet.service
+
+```
+
+### Check
+``` bash
+docker images
+docker ps
+```
