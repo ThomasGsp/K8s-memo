@@ -200,30 +200,7 @@ apt-get update
 apt-get install docker-ce
 ```
 
-### Docker install (Master + worker) -- Ubuntu
-https://docs.docker.com/install/linux/docker-ce/ubuntu/#set-up-the-repository
-``` bash
-sudo apt-get install \
-     apt-transport-https \
-     ca-certificates \
-     curl \
-     gnupg2 \
-     software-properties-common
-
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-apt-key fingerprint 0EBFCD88
-
-add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-   $(lsb_release -cs) \
-   stable"
-
-apt-get update
-apt-get install docker-ce
-```
-
-
-### Kubernetes (Master + worker)
+### Kubernetes sources (Master + worker)
 ``` bash
 apt-get update && apt-get install -y apt-transport-https curl
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
@@ -265,7 +242,7 @@ apt-mark hold kubelet
 ```
 
 
-### Joining your nodes (Worker)
+### Join your Worker nodes
 ``` bash
 kubeadm join 172.16.0.111:6443 --token pnaven.wxx..nu10c --discovery-token-ca-cert-hash sha256:3e....4ed39f9b9ede
 ```
@@ -1207,11 +1184,9 @@ spec:
 ```
 
 #### Quick test
-`` bash
+``` bash
 curl -H "Host: www.example.com" http://clusterip/
 ```
-
-
 
 ## Logs debug
 ``` bash
@@ -1412,4 +1387,21 @@ systemctl restart kubelet.service
 ``` bash
 docker images
 docker ps
+```
+
+## Metric
+https://github.com/kubernetes-incubator/metrics-server
+``` bash
+# INSTALL
+git clone https://github.com/kubernetes-incubator/metrics-server.git
+cd metrics-server
+kubectl create -f deploy/1.8+/
+
+# CHECK
+kubectl get --raw /apis/metrics.k8s.io/v1beta1
+kubectl get apiservice v1beta1.metrics.k8s.io -o yaml
+
+# USE
+kubectl get node <nodename>
+
 ```
