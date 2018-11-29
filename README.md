@@ -508,7 +508,7 @@ echo -n '1f2d1e2e67df' > ./password
 ```
 
 ``` bash
-kubectl create secret generic db-user-pass --from-file=./username --from-file=./password
+kubectl create secret generic mysecret --from-file=./username --from-file=./password
 ```
 
 OR
@@ -547,11 +547,11 @@ https://kubernetes.io/docs/concepts/configuration/secret/#using-secrets-as-envir
 apiVersion: v1
 kind: Pod
 metadata:
-  name: db-user-pass
+  name: nginx-user-pass
 spec:
   containers:
   - name: mycontainer
-    image: redis
+    image: nginx
     env:
       - name: SECRET_USERNAME
         valueFrom:
@@ -571,11 +571,11 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: mypod
+  name: nginx-user-pass
 spec:
   containers:
   - name: mypod
-    image: redis
+    image: nginx
     volumeMounts:
     - name: foo
       mountPath: "/etc/foo"
