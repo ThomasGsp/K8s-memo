@@ -92,6 +92,12 @@ kubeadm token list
 kubeadm config -h
 ```
 
+```bash
+kubectl run hello-world --replicas=2 --labels="run=load-balancer-example" --image=gcr.io/google-samples/node-hello:1.0  --port=8080
+kubectl get deployment mydeployment -o yaml --export > myappdep.yaml
+kubectl run myapp --image=me/myapp:v1  -o yaml --dry-run > myapp.yaml
+```
+
 ## Delete all pods
 ``` bash
 kubectl get pods | awk -F' ' '{print $1}' | xargs  kubectl delete pods
