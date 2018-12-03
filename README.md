@@ -159,6 +159,25 @@ kubectl proxy
 https://<master-ip>:<apiserver-port>/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
 ```
 
+### Auth with token
+``` bash
+# (we assume default)
+kubectl create serviceaccount my-dashboard-sa
+
+kubectl create clusterrolebinding my-dashboard-sa \
+  --clusterrole=cluster-admin \
+  --serviceaccount=default:my-dashboard-sa
+
+kubectl get secrets
+kubectl describe secret my-dashboard-sa-token-xxxxx
+```
+
+### Auth with admin.conf
+``` bash
+# TO DO
+```
+
+
 ## ETCD
 https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/
 https://www.mirantis.com/blog/everything-you-ever-wanted-to-know-about-using-etcd-with-kubernetes-v1-6-but-were-afraid-to-ask/
