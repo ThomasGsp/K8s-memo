@@ -112,7 +112,11 @@ chmod +x cfssl cfssljson
 mv cfssl cfssljson /usr/local/bin/
 ```
 
-## Using Zsh
+## Using Zsh/bash completion
+
+``` bash
+source <(kubectl completion bash)
+```
 
 ``` bash
 if [ $commands[kubectl] ]; then
@@ -134,6 +138,8 @@ ZSH_THEME="pygmalion"
 
 source ~/.zshrc
 ```
+
+
 
 ## Kubectl from bin
 ``` bash
