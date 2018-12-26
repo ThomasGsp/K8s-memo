@@ -592,7 +592,7 @@ spec:
         valueFrom:
           secretKeyRef:
             name: mysecret
-            key: password
+            key: username
       - name: SECRET_PASSWORD
         valueFrom:
           secretKeyRef:
