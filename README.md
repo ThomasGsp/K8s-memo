@@ -469,8 +469,8 @@ spec:
   updateStrategy:
     rollingUpdate:
       maxUnavailable: 1
-      
     type: RollingUpdate
+    
    template:
       metadata:
          labels:
