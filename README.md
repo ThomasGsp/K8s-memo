@@ -956,23 +956,18 @@ https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
 
 ### POD
-kubectl apply -f https://k8s.io/examples/application/deployment.yaml
 ``` bash
 apiVersion: v1
 kind: Pod
 metadata:
-  name: security-context-demo
+  name: security-context-demo-2
 spec:
   securityContext:
     runAsUser: 1000
-    fsGroup: 1000
   containers:
-  - name: nginx
-    image: nginx:1.12.2
-    ports:
-    - containerPort: 80
-    securityContext:
-      allowPrivilegeEscalation: false
+  - name: sec-ctx-demo-2
+    image: gcr.io/google-samples/node-hello:1.0
+    
 ```
 
 ### POD + Container
@@ -991,6 +986,11 @@ spec:
       runAsUser: 2000
       allowPrivilegeEscalation: false
 
+```
+
+### Test 
+``` bash
+kubectl exec -it  security-context-demo-2 -- /bin/bash -c "ps  aux"
 ```
 
 ### Networking policy
