@@ -570,6 +570,11 @@ data:
 kubectl get secrets
 ```
 
+### Show a Secret
+``` bash
+kubectl get secret mysecret -o yaml
+```
+
 ### Decoding a Secret
 ``` bash
 echo 'MWYyZDFlMmU2N2Rm' | base64 --decode
