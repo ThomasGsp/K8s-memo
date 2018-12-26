@@ -464,9 +464,13 @@ kind: DaemonSet
 metadata:
    name: ds-one
 spec:
-   updateStrategy: RollingUpdate
+
+  minReadySeconds: 0
+  updateStrategy:
+    rollingUpdate:
       maxUnavailable: 1
-      minReadySeconds: 0
+      
+    type: RollingUpdate
    template:
       metadata:
          labels:
