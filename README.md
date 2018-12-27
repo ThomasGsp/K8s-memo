@@ -996,6 +996,8 @@ kubectl exec -it  security-context-demo-2 -- /bin/bash -c "ps  aux"
 ### Networking policy
 https://kubernetes.io/docs/concepts/services-networking/network-policies/
 
+https://kubernetes.io/docs/tasks/administer-cluster/declare-network-policy/
+
 ``` bash
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
